@@ -1,4 +1,4 @@
-document.addEventListener('DOMContentLoaded', () => {
+ocument.addEventListener('DOMContentLoaded', () => {
 
     // --- DOM Element References ---
     const volumeFlowSlider = document.getElementById('volumeFlow');
@@ -10,13 +10,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const diameterInput = document.getElementById('diameterInput');
 
     const resetBtn = document.getElementById('resetBtn');
+    const setVelocityBtn = document.getElementById('setVelocityBtn'); 
 
     // Input value displays
     const volumeFlowLpmValueEl = document.getElementById('volumeFlowLpmValue');
     const volumeFlowM3hValueEl = document.getElementById('volumeFlowM3hValue');
     const deltaTValueEl = document.getElementById('deltaTValue');
     const diameterValueEl = document.getElementById('diameterValue');
-    const crossSectionValueEl = document.getElementById('crossSectionValue'); // NEU
+    const crossSectionValueEl = document.getElementById('crossSectionValue');
+    const pressureLossValueEl = document.getElementById('pressureLossValue'); 
 
     // Output displays
     const powerOutputEl = document.getElementById('powerOutput');
@@ -44,6 +46,16 @@ document.addEventListener('DOMContentLoaded', () => {
         return volumeFlowM3s / areaM2;
     }
 
+    /**
+     * Calculates specific pressure loss using a common empirical formula.
+     * R [Pa/m] ≈ 21000 * v [m/s]^1.8 / d [mm]^1.2
+     */
+    function calculatePressureLoss(velocity, diameterMm) {
+        if (diameterMm <= 0 || velocity <= 0) return 0;
+        const R = 21000 * Math.pow(velocity, 1.8) / Math.pow(diameterMm, 1.2);
+        return R;
+    }
+
     // --- Main Update Function ---
     function updateAllOutputs() {
         const volumeFlowLpm = parseFloat(volumeFlowSlider.value) || 0;
@@ -53,8 +65,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const volumeFlowM3h = volumeFlowLpm * 60 / 1000;
         const powerKw = calculatePower(volumeFlowM3h, deltaT);
         const velocityMs = calculateVelocity(volumeFlowM3h, diameterMm);
-
-        // Berechnung der Querschnittsfläche
+        const pressureLossPaM = calculatePressureLoss(velocityMs, diameterMm);
         const radiusM = diameterMm / 2 / 1000;
         const areaM2 = Math.PI * Math.pow(radiusM, 2);
 
@@ -64,6 +75,7 @@ document.addEventListener('DOMContentLoaded', () => {
         deltaTValueEl.textContent = `${deltaT.toFixed(1)} °C`;
         diameterValueEl.textContent = `${diameterMm.toFixed(1)} mm`;
         crossSectionValueEl.textContent = `A = ${areaM2.toFixed(6)} m²`;
+        pressureLossValueEl.textContent = `R = ${pressureLossPaM.toFixed(0)} Pa/m`;
 
         powerOutputEl.textContent = powerKw.toFixed(2);
         velocityOutputEl.textContent = velocityMs.toFixed(2);
@@ -132,13 +144,34 @@ document.addEventListener('DOMContentLoaded', () => {
     connectControls(deltaTInput, deltaTSlider);
     connectControls(diameterInput, diameterSlider);
 
+    // Funktion für den "v auf 1.0 m/s setzen" Button
+    setVelocityBtn.addEventListener('click', () => {
+        const targetVelocity = 1.0;
+        const diameterMm = parseFloat(diameterSlider.value);
+        if (diameterMm <= 0) return;
+
+        const radiusM = diameterMm / 2 / 1000;
+        const areaM2 = Math.PI * Math.pow(radiusM, 2);
+        const volumeFlowM3s = targetVelocity * areaM2;
+        const volumeFlowLpm = volumeFlowM3s * 3600 * 1000 / 60;
+        
+        // Sanitize, um den Slider-Maximalwert nicht zu überschreiten
+        const min = parseFloat(volumeFlowSlider.min);
+        const max = parseFloat(volumeFlowSlider.max);
+        const step = parseFloat(volumeFlowSlider.step);
+        const sanitizedVolume = sanitizeValue(volumeFlowLpm, min, max, step);
+
+        volumeFlowSlider.value = sanitizedVolume;
+        volumeFlowInput.value = sanitizedVolume.toFixed(1);
+        updateAllOutputs();
+    });
+
     // --- Reset and Initialization ---
     function resetToDefaults() {
         volumeFlowSlider.value = DEFAULT_VALUES.volumeFlow;
         deltaTSlider.value = DEFAULT_VALUES.deltaT;
         diameterSlider.value = DEFAULT_VALUES.diameter;
         
-        // Sync input fields with new slider values
         volumeFlowInput.value = DEFAULT_VALUES.volumeFlow.toFixed(1);
         deltaTInput.value = DEFAULT_VALUES.deltaT.toFixed(1);
         diameterInput.value = DEFAULT_VALUES.diameter.toFixed(1);
@@ -148,7 +181,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     resetBtn.addEventListener('click', resetToDefaults);
 
-    // Initial Call on page load
     function initialize() {
         resetToDefaults();
     }

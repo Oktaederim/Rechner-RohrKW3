@@ -1,4 +1,4 @@
-ocument.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', () => {
 
     // --- DOM Element References ---
     const volumeFlowSlider = document.getElementById('volumeFlow');
@@ -25,6 +25,19 @@ ocument.addEventListener('DOMContentLoaded', () => {
     const velocityOutputEl = document.getElementById('velocityOutput');
     const velocityBox = document.getElementById('velocityBox');
 
+    // --- Check if all elements were found ---
+    const elements = [
+        volumeFlowSlider, deltaTSlider, diameterSlider, volumeFlowInput, deltaTInput, 
+        diameterInput, resetBtn, setVelocityBtn, volumeFlowLpmValueEl, volumeFlowM3hValueEl,
+        deltaTValueEl, diameterValueEl, crossSectionValueEl, pressureLossValueEl,
+        powerOutputEl, velocityOutputEl, velocityBox
+    ];
+
+    if (elements.some(el => !el)) {
+        console.error("Fehler: Ein oder mehrere HTML-Elemente wurden nicht gefunden. Bitte prüfen Sie die IDs in der index.html. Das Skript wird beendet.");
+        return; // Stoppt die Ausführung, um Fehler zu vermeiden
+    }
+
     // --- Constants ---
     const WATER_CONSTANT_KW_M3H = 1.163;
     const DEFAULT_VALUES = {
@@ -46,10 +59,6 @@ ocument.addEventListener('DOMContentLoaded', () => {
         return volumeFlowM3s / areaM2;
     }
 
-    /**
-     * Calculates specific pressure loss using a common empirical formula.
-     * R [Pa/m] ≈ 21000 * v [m/s]^1.8 / d [mm]^1.2
-     */
     function calculatePressureLoss(velocity, diameterMm) {
         if (diameterMm <= 0 || velocity <= 0) return 0;
         const R = 21000 * Math.pow(velocity, 1.8) / Math.pow(diameterMm, 1.2);
@@ -155,7 +164,6 @@ ocument.addEventListener('DOMContentLoaded', () => {
         const volumeFlowM3s = targetVelocity * areaM2;
         const volumeFlowLpm = volumeFlowM3s * 3600 * 1000 / 60;
         
-        // Sanitize, um den Slider-Maximalwert nicht zu überschreiten
         const min = parseFloat(volumeFlowSlider.min);
         const max = parseFloat(volumeFlowSlider.max);
         const step = parseFloat(volumeFlowSlider.step);

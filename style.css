@@ -30,3 +30,23 @@ input[type="range"]::-moz-range-thumb {
 .output-box {
     transition: background-color 0.3s ease, color 0.3s ease;
 }
+
+/* Styles für die einklappbare Info-Sektion */
+.info-details summary {
+    list-style: none; /* Entfernt den Standard-Pfeil */
+}
+.info-details summary::-webkit-details-marker {
+    display: none;
+}
+.arrow {
+    display: inline-block;
+    width: 0;
+    height: 0;
+    border-top: 5px solid transparent;
+    border-bottom: 5px solid transparent;
+    border-left: 6px solid #6b7280; /* Pfeil nach rechts (geschlossen) */
+    transition: transform 0.2s ease-in-out;
+}
+.info-details[open] .arrow {
+    transform: rotate(90deg); /* Pfeil nach unten (geöffnet) */
+}
